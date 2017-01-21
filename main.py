@@ -246,15 +246,20 @@ class Post(db.Model):
     last_modified = db.DateTimeProperty(auto_now=True)
     likes_count = db.IntegerProperty(default=0)
     list_users_likes = db.StringListProperty()
+    author = db.StringProperty(required=True)
 
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p=self)
 
     @staticmethod
-    def get_post_key(post_id, username):
+    # def get_post_key(post_id, username):
+    # key = db.Key.from_path('Post', int(post_id), parent=users_key())
+    #   key = db.Key.from_path('Post', int(post_id), parent=User.get_user_key(username))
+    #  return key
+    def get_post_key(post_id):
         # key = db.Key.from_path('Post', int(post_id), parent=users_key())
-        key = db.Key.from_path('Post', int(post_id), parent=User.get_user_key(username))
+        key = db.Key.from_path('Post', int(post_id))
         return key
 
 
@@ -264,7 +269,7 @@ class Comments(db.Model):
 
     @staticmethod
     def get_comments_key_by_post(post_id, username):
-        key = db.Key.from_path('Comments', parent=Post.get_post_key(post_id, username))
+        key = db.Key.from_path('Comments', parent=Post.get_post_key(post_id))
         return key
 
 
@@ -280,7 +285,8 @@ class NewPost(Handler):
         content = self.request.get('content')
 
         if subject and content:
-            post = Post(parent=User.get_user_key(self.user.username),
+            # post = Post(parent=User.get_user_key(self.user.username),
+            post = Post(author=self.user.username,
                         subject=subject,
                         content=content,
                         likes_count=0)
@@ -295,18 +301,30 @@ class NewPost(Handler):
 
 class PostDetails(Handler):
     def get(self, post_id):
-        key = Post.get_post_key(post_id, self.user.username)
+        #key = Post.get_post_key(post_id, self.user.username)
+        key = Post.get_post_key(post_id)
         post = db.get(key)
         comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
+
+        if self.user:
+            username = self.user.username
+            if username in post.list_users_likes:
+                is_liked=True
+            else:
+                is_liked=False
 
         if not post:
             self.error(404)
             return
-        self.render("permalink.html", post=post, comments=comments, user=self.user)
+        self.render("permalink.html", post=post, comments=comments, user=self.user, is_liked=is_liked)
 
     def post(self, post_id):
+        if not self.user:
+            self.redirect('/login')
+
         action = self.request.get('submit')
-        key = Post.get_post_key(post_id, self.user.username)
+        #key = Post.get_post_key(post_id, self.user.username)
+        key = Post.get_post_key(post_id)
 
         if action == 'Delete Post':
             # Delete Post
@@ -326,6 +344,14 @@ class PostDetails(Handler):
             post.put()
 
             logging.info("** Like called with post id {}! **".format(self.user.username))
+            self.redirect('/blog/%s' % str(post.key().id()))
+        elif action == 'Unlike':
+            post = db.get(key)
+            post.likes_count -= 1
+            list_likes = post.list_users_likes
+            list_likes.remove(self.user.username)
+            post.list_users_likes = list_likes
+            post.put()
             self.redirect('/blog/%s' % str(post.key().id()))
         else:
             comment = self.request.get('comment')

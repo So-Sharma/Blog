@@ -4,8 +4,14 @@
   {{post.render() | safe}}
 
 <form method="post">
-    <input name="submit" type="submit" value="Like">
-     {{post.likes_count}} people liked it
+    Likes {{post.likes_count}}
+    {% if user.username != post.author %}
+        {% if is_liked %}
+            <input name="submit" type="submit" value="Unlike">
+        {% else %}
+            <input name="submit" type="submit" value="Like">
+        {% endif %}
+    {% endif %}
 
 <br>
 <br>
@@ -24,7 +30,10 @@
     <input name="submit" type="submit" value="Post Comment">
     <br>
     <br>
-    <input name="submit" type="submit" value="Delete Post">
+    {% if user.username == post.author %}
+        <input name="submit" type="submit" value="Edit Post">
+        <input name="submit" type="submit" value="Delete Post">
+    {% endif %}
 </form>
 
 {% endblock %}
