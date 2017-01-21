@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<h2>Login</h2>
+</head>
+<body>
+<form method="post">
+  <label>Username
+    <input name="username" type="text" value="{{username}}">
+  </label>
+  <br>
+  <label>Password
+    <input name="password" type="text" value="">
+  </label>
+  {{error}}
+  <br>
+  <input name="submit" type="submit" value="Submit">
+
+  <a href="/signup">Sign up</a>
+</form>
+</body>
+</html>

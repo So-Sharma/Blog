@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{post.render() | safe}}
+
+<form method="post">
+    <input name="submit" type="submit" value="Like">
+     {{post.likes_count}} people liked it
+
+<br>
+<br>
+{% for c in comments %}
+{{ c.username | safe }}
+<hr>
+{{ c.comment | safe }}
+<br>
+{% endfor %}
+
+
+    <br><br>
+    <label>Leave a Comment<br>
+        <textarea name="comment">{{comment}}</textarea>
+    </label>
+    <input name="submit" type="submit" value="Post Comment">
+    <br>
+    <br>
+    <input name="submit" type="submit" value="Delete Post">
+</form>
+
+{% endblock %}

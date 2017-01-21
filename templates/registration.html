@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+<form method="post">
+  <label>Username
+    <input name="username" type="text" value="{{username}}">
+  </label>
+  {{error_username}}
+  {{error_user}}
+  <br>
+  <label>Password
+    <input name="password" type="text" value="">
+  </label>
+  {{error_password}}
+  <br>
+  <br>
+  <label>Verify Password
+    <input name="verify" type="text" value="">
+  </label>
+  {{error_verify}}
+  <br>
+  <br>
+  <label>Email (optional)
+    <input name="email" type="text" value="{{email}}">
+  </label>
+  {{error_email}}
+  <br>
+  <br>
+  <input name="submit" type="submit" value="Submit">
+</form>
+</body>
+</html>
