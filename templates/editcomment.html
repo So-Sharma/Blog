@@ -1,20 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Edit Comment</h2>
+<h4>Edit Comment</h4>
 
+<form method="post" class="form-horizontal">
+  <div class="text-danger">
+    {{error}}
+  </div>
 
-<form method="post">
-  <br>
-  <br>
+  <div class="form-group">
 
+    <label class="col-sm-2 control-label">Leave a comment</label>
+    <div class="col-sm-10">
+      <textarea name="comment">{{comment.comment}}</textarea>
+    </div>
+  </div>
 
-  <textarea name="comment">{{comment.comment}}</textarea>
-
-  <br>
-  {{error}}
-  <br>
-  <input name="submit" type="submit" value="Edit Comment">
-  <a href="/blog/{{post_id}}">Cancel</a>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <input name="submit" type="submit" value="Edit Comment" class="button form-control margin-bottom">
+      <a href="/blog/{{post_id}}" class="button">Cancel</a>
+    </div>
+  </div>
 </form>
 {% endblock %}

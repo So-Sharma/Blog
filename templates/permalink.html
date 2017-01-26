@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{post.render() | safe}}
+{{post.render() | safe}}
 
 <form method="post">
 
@@ -10,42 +10,51 @@
             <strong>Likes {{post.likes_count}}</strong>
         </div>
         <div class="col-md-1">
+            {% if user %}
             {% if user.username != post.author %}
             {% if is_liked %}
-                <input name="submit" type="submit" value="Unlike">
+            <input name="submit" type="submit" value="Unlike" class="button">
             {% else %}
-                <input name="submit" type="submit" value="Like">
+            <input name="submit" type="submit" value="Like" class="button">
+            {% endif %}
             {% endif %}
             {% endif %}
         </div>
     </div>
-
+    <div class="row">
+        <div class="col-md-12">
+            <hr>
+        </div>
+    </div>
     <div class="row text-center">
         <strong>Comments</strong>
     </div>
-    <div class="row">
-        <hr>
-    </div>
-{% for c in comments %}
-    <div class="row">
-        <strong>{{ c.username | safe }}</strong>
 
+    {% for c in comments %}
+    <div class="row">
+        <div class="col-md-12">
+            <strong>{{ c.username | safe }}</strong>
+        </div>
     </div>
     <div class="row text-muted">
-        {{c.created.strftime("%b %d, %Y")}}
+        <div class="col-md-12">
+            {{c.created.strftime("%b %d, %Y")}}
+        </div>
     </div>
-    <div class="row">
-        {{ c.comment | safe }}
+    <div class="row margin-bottom">
+        <div class="col-md-12">
+            {{ c.comment | safe }}
+        </div>
     </div>
 
 
     {% if c.username == user.username %}
     <div class="row">
         <div class="col-md-2">
-            <a href="/blog/editcomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}">Edit Comment</a>
+            <a href="/blog/editcomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}" class="button">Edit Comment</a>
         </div>
         <div class="col-md-2">
-            <a href="/blog/deletecomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}">Delete Comment</a>
+            <a href="/blog/deletecomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}" class="button">Delete Comment</a>
         </div>
     </div>
     {% endif %}
@@ -54,13 +63,18 @@
         <hr>
     </div>
 
-{% endfor %}
+    {% endfor %}
 
+    <div class="row text-danger">
+        <div class="col-md-12">
+            {{error}}
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-md-12">
 
-            <label>Leave a Comment<br>
+            <label>Leave a comment<br>
                 <textarea name="comment">{{comment}}</textarea>
             </label>
         </div>
@@ -68,23 +82,22 @@
 
     <div class="row">
         <div class="col-md-12">
-            <input name="submit" type="submit" value="Post Comment">
+            <input name="submit" type="submit" value="Post Comment" class="button margin-bottom">
         </div>
     </div>
-    <br>
-    <br>
+
     <div class="row">
 
-    {% if user.username == post.author %}
-    <div class="col-md-1">
+        {% if user.username == post.author %}
+        <div class="col-md-1">
 
-        <a href="/blog/editpost?post_id={{post.key().id()}}" class="button">Edit Post</a>
+            <a href="/blog/editpost?post_id={{post.key().id()}}" class="button">Edit Post</a>
 
-    </div>
-    <div class="col-md-1">
-        <input name="submit" type="submit" class="button" value="Delete Post">
-    </div>
-    {% endif %}
+        </div>
+        <div class="col-md-1">
+            <input name="submit" type="submit" class="button margin-bottom" value="Delete Post">
+        </div>
+        {% endif %}
 </form>
 
 {% endblock %}

@@ -18,7 +18,8 @@ body {
 }
 
 .text-thick {
-    font-weight: 6000;
+    font-family: "Lato", sans-serif;
+    font-weight: 9000;
 }
 
 .title-post {
@@ -30,10 +31,6 @@ body {
     font-weight: 600;
 }
 
-.title-logo {
-    margin-top: 20px;
-}
-
 .bg-footer {
     background-color: #f0f0f0;
 }
@@ -42,13 +39,13 @@ body {
 margin-bottom:15px;}
 
 .button {
-  font: bold 11px Arial;
+  font: bold 12px Arial;
   text-decoration: none;
-  background-color: #EEEEEE;
+  background-color: #f0f0f0;
   color: #333333;
   padding: 2px 6px 2px 6px;
   border-top: 1px solid #CCCCCC;
-  border-right: 1px solid #333333;
-  border-bottom: 1px solid #333333;
+  border-right: 1px solid #CCCCCC;
+  border-bottom: 1px solid #CCCCCC;
   border-left: 1px solid #CCCCCC;
 }

@@ -14,44 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
-import re
-
 import logging
+
 import webapp2
-import jinja2
-import hmac
-import random
-import hashlib
-from string import letters
 from google.appengine.ext import db
 
-try:
-    template_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
-    # os.path.join(os.path.dirname(_file_), 'templates')
-except NameError:  # We are the main py2exe script, not a module
-    import sys
-
-    template_dir = os.path.join(os.path.dirname(sys.argv[0]), 'templates')
-jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
-                               autoescape=True)
-
-secret = "narrate"
-
-
-def make_secure_val(val):
-    return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
-
-
-def check_secure_val(secure_val):
-    val = secure_val.split('|')[0]
-    if secure_val == make_secure_val(val):
-        return val
-
-
-def render_str(template, **params):
-    t = jinja_env.get_template(template)
-    return t.render(params)
+from comments import Comments
+from helper import *
+from post import Post
+from user import User
 
 
 class Handler(webapp2.RequestHandler):
@@ -87,87 +58,6 @@ class Handler(webapp2.RequestHandler):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
-
-
-# User information
-def make_salt(len=5):
-    return ''.join(random.choice(letters) for x in range(len))
-
-
-def hash_pw(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-    hash = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s,%s' % (salt, hash)
-
-
-def valid_pw(name, password, saved_hash):
-    salt = saved_hash.split(',')[0]
-    new_hash = hash_pw(name, password, salt)
-    if new_hash == saved_hash:
-        return True
-    else:
-        return False
-
-
-def users_key(group='default'):
-    return db.Key.from_path('users', group)
-
-
-class User(db.Model):
-    username = db.StringProperty(required=True)
-    password_hash = db.StringProperty(required=True)
-    email = db.StringProperty()
-
-    @staticmethod
-    def get_user_key(username):
-        key = db.Key.from_path('User', username, parent=users_key())
-        return key
-
-    @classmethod
-    def by_name(cls, name):
-        user = User.all().filter('username =', name).get()
-        return user
-
-    @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid, parent=users_key())
-
-    @classmethod
-    def register(cls, name, pw, email=None):
-        pw_hash = hash_pw(name, pw)
-        return User(parent=users_key(),
-                    username=name,
-                    password_hash=pw_hash,
-                    email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        user = cls.by_name(name)
-        if user:
-            if valid_pw(name, pw, user.password_hash):
-                return user
-
-
-USERNAME_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-
-
-def valid_username(username):
-    return USERNAME_RE.match(username)
-
-
-PASSWORD_RE = re.compile(r"^.{3,20}$")
-
-
-def valid_password(password):
-    return PASSWORD_RE.match(password)
-
-
-EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
-
-
-def valid_email(email):
-    return not email or EMAIL_RE.match(email)
 
 
 class Signup(Handler):
@@ -241,51 +131,6 @@ class Login(Handler):
             self.render('login.html', error=error_message)
 
 
-class Post(db.Model):
-    subject = db.StringProperty(required=True)
-    content = db.StringProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-    likes_count = db.IntegerProperty(default=0)
-    list_users_likes = db.StringListProperty()
-    author = db.StringProperty(required=True)
-
-    def render(self):
-        self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p=self)
-
-    @staticmethod
-    # def get_post_key(post_id, username):
-    # key = db.Key.from_path('Post', int(post_id), parent=users_key())
-    #   key = db.Key.from_path('Post', int(post_id), parent=User.get_user_key(username))
-    #  return key
-    def get_post_key(post_id):
-        # key = db.Key.from_path('Post', int(post_id), parent=users_key())
-        key = db.Key.from_path('Post', int(post_id))
-        return key
-
-
-class Comments(db.Model):
-    comment = db.StringProperty(required=True)
-    username = db.StringProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-
-    @staticmethod
-    def get_comments_key_by_post(post_id, username):
-        key = db.Key.from_path('Comments', parent=Post.get_post_key(post_id))
-        return key
-
-    @classmethod
-    def get_comment_by_id(cls, comment_id, post_id):
-        return Comments.get_by_id(int(comment_id), parent=Post.get_post_key(post_id))
-
-    @classmethod
-    def get_comment_key(cls, comment_id, post_id):
-        key = db.Key.from_path('Comments', int(comment_id), parent=Post.get_post_key(post_id))
-        return key
-
-
 class NewPost(Handler):
     def get(self):
         self.render("newpost.html", user=self.user)
@@ -307,7 +152,8 @@ class NewPost(Handler):
             self.redirect('/blog/%s' % str(post.key().id()))
         else:
             params = dict(subject=subject,
-                          content=content)
+                          content=content,
+                          user=self.user)
             params['error'] = "Please enter the subject and content"
             self.render('newpost.html', **params)
 
@@ -329,6 +175,8 @@ class PostDetails(Handler):
                 is_liked=True
             else:
                 is_liked=False
+        else:
+            is_liked = False
 
         self.render("permalink.html", post=post, comments=comments, user=self.user, is_liked=is_liked)
 
@@ -348,7 +196,6 @@ class PostDetails(Handler):
             # comments_key = Comments.get_comments_key_by_post(post_id)
             # db.delete(comments_key)
             self.redirect('/blog')
-            # logging.info("** Delete called with post id {}! **".format(comments_key))
         elif action == 'Like':
             post = db.get(key)
             post.likes_count += 1
@@ -369,12 +216,26 @@ class PostDetails(Handler):
             self.redirect('/blog/%s' % str(post.key().id()))
         else:
             comment = self.request.get('comment')
-            comments = Comments(comment=comment,
-                                username=self.user.username,
-                                parent=key)
-            comments.put()
-            post = db.get(key)
-            self.redirect('/blog/%s' % str(post.key().id()))
+
+            if comment:
+                comments = Comments(comment=comment,
+                                    username=self.user.username,
+                                    parent=key)
+                comments.put()
+                post = db.get(key)
+                self.redirect('/blog/%s' % str(post.key().id()))
+            else:
+                error = "Please enter the comment"
+                post = db.get(key)
+                comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
+                self.render("permalink.html", post=post, comments=comments, error=error, user=self.user)
+
+            #comments = Comments(comment=comment,
+            #                  username=self.user.username,
+            #                  parent=key)
+            #comments.put()
+            #post = db.get(key)
+            #self.redirect('/blog/%s' % str(post.key().id()))
 
 
 # This displays the the most recent 10 posts on the blogs landing page
