@@ -4,35 +4,86 @@
   {{post.render() | safe}}
 
 <form method="post">
-    Likes {{post.likes_count}}
-    {% if user.username != post.author %}
-        {% if is_liked %}
-            <input name="submit" type="submit" value="Unlike">
-        {% else %}
-            <input name="submit" type="submit" value="Like">
-        {% endif %}
+
+    <div class="row">
+        <div class="col-md-1">
+            <strong>Likes {{post.likes_count}}</strong>
+        </div>
+        <div class="col-md-1">
+            {% if user.username != post.author %}
+            {% if is_liked %}
+                <input name="submit" type="submit" value="Unlike">
+            {% else %}
+                <input name="submit" type="submit" value="Like">
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row text-center">
+        <strong>Comments</strong>
+    </div>
+    <div class="row">
+        <hr>
+    </div>
+{% for c in comments %}
+    <div class="row">
+        <strong>{{ c.username | safe }}</strong>
+
+    </div>
+    <div class="row text-muted">
+        {{c.created.strftime("%b %d, %Y")}}
+    </div>
+    <div class="row">
+        {{ c.comment | safe }}
+    </div>
+
+
+    {% if c.username == user.username %}
+    <div class="row">
+        <div class="col-md-2">
+            <a href="/blog/editcomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}">Edit Comment</a>
+        </div>
+        <div class="col-md-2">
+            <a href="/blog/deletecomment?comment_id={{c.key().id()}}&post_id={{post.key().id()}}">Delete Comment</a>
+        </div>
+    </div>
     {% endif %}
 
-<br>
-<br>
-{% for c in comments %}
-{{ c.username | safe }}
-<hr>
-{{ c.comment | safe }}
-<br>
+    <div class="row">
+        <hr>
+    </div>
+
 {% endfor %}
 
 
-    <br><br>
-    <label>Leave a Comment<br>
-        <textarea name="comment">{{comment}}</textarea>
-    </label>
-    <input name="submit" type="submit" value="Post Comment">
+    <div class="row">
+        <div class="col-md-12">
+
+            <label>Leave a Comment<br>
+                <textarea name="comment">{{comment}}</textarea>
+            </label>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <input name="submit" type="submit" value="Post Comment">
+        </div>
+    </div>
     <br>
     <br>
+    <div class="row">
+
     {% if user.username == post.author %}
-        <input name="submit" type="submit" value="Edit Post">
-        <input name="submit" type="submit" value="Delete Post">
+    <div class="col-md-1">
+
+        <a href="/blog/editpost?post_id={{post.key().id()}}" class="button">Edit Post</a>
+
+    </div>
+    <div class="col-md-1">
+        <input name="submit" type="submit" class="button" value="Delete Post">
+    </div>
     {% endif %}
 </form>
 

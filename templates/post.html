@@ -1,20 +1,29 @@
-{{p.subject}}<br>
- {{p.created.strftime("%b %d, %Y")}}
+<div class="row">
+ <div class="col-md-12 title-post">
+  <strong><a href="/blog/{{p.key().id()}}">{{p.subject}}</a></strong>
+ </div>
+</div>
+
+<div class="row title-post-details">
+ <div class="col-md-3 text-left">
+  By {{p.author}}
+ </div>
+ <div class="col-md-9 text-right">
+  Posted on {{p.created.strftime("%b %d, %Y")}}
+ </div>
+</div>
+
+<div class="row text-center">
+ <div class="col-md-12">
+  <hr>
+ </div>
+</div>
+
+<div class="row">
+ <div class="col-md-12 text-description text-center" >
   {{p._render_text | safe}}
+ </div>
+</div>
 
-<!--div class="post">
-  <div class="post-heading">
-    <div class="post-title">
-      {{p.subject}}
-    </div>
 
-    <div class="post-date">
-      {{p.created.strftime("%b %d, %Y")}}
-    </div>
-  </div>
-
-  <div class="post-content">
-    {{p._render_text | safe}}
-  </div>
-</div-->
 

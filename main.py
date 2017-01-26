@@ -210,7 +210,8 @@ class Signup(Handler):
                 u = User.register(username, password, email)
                 u.put()
                 self.login(u)
-                self.redirect('/welcome?username=' + username)
+                self.redirect('/blog')
+                # self.redirect('/welcome?username=' + username)
 
 
 class Welcome(Handler):
@@ -233,7 +234,8 @@ class Login(Handler):
         user = User.login(username, password)
         if user:
             self.login(user)
-            self.redirect('/welcome?username=' + username)
+            # self.redirect('/welcome?username=' + username)
+            self.redirect('/blog')
         else:
             error_message = 'Invalid login id and password'
             self.render('login.html', error=error_message)
@@ -266,16 +268,27 @@ class Post(db.Model):
 class Comments(db.Model):
     comment = db.StringProperty(required=True)
     username = db.StringProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    last_modified = db.DateTimeProperty(auto_now=True)
 
     @staticmethod
     def get_comments_key_by_post(post_id, username):
         key = db.Key.from_path('Comments', parent=Post.get_post_key(post_id))
         return key
 
+    @classmethod
+    def get_comment_by_id(cls, comment_id, post_id):
+        return Comments.get_by_id(int(comment_id), parent=Post.get_post_key(post_id))
+
+    @classmethod
+    def get_comment_key(cls, comment_id, post_id):
+        key = db.Key.from_path('Comments', int(comment_id), parent=Post.get_post_key(post_id))
+        return key
+
 
 class NewPost(Handler):
     def get(self):
-        self.render("newpost.html")
+        self.render("newpost.html", user=self.user)
 
     def post(self):
         if not self.user:
@@ -306,6 +319,10 @@ class PostDetails(Handler):
         post = db.get(key)
         comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
 
+        if not post:
+            self.error(404)
+            return
+
         if self.user:
             username = self.user.username
             if username in post.list_users_likes:
@@ -313,9 +330,6 @@ class PostDetails(Handler):
             else:
                 is_liked=False
 
-        if not post:
-            self.error(404)
-            return
         self.render("permalink.html", post=post, comments=comments, user=self.user, is_liked=is_liked)
 
     def post(self, post_id):
@@ -333,7 +347,7 @@ class PostDetails(Handler):
             # Delete associated comments
             # comments_key = Comments.get_comments_key_by_post(post_id)
             # db.delete(comments_key)
-            self.redirect('/blog/?')
+            self.redirect('/blog')
             # logging.info("** Delete called with post id {}! **".format(comments_key))
         elif action == 'Like':
             post = db.get(key)
@@ -363,12 +377,98 @@ class PostDetails(Handler):
             self.redirect('/blog/%s' % str(post.key().id()))
 
 
+# This displays the the most recent 10 posts on the blogs landing page
 class BlogsLanding(Handler):
     def get(self):
         posts = db.GqlQuery("Select * from Post order by created desc limit 10")
         self.render('blogslanding.html', posts=posts, user=self.user)
 
 
+# This is used to edit an existing post
+class EditPost(Handler):
+    def get(self):
+        post_id = self.request.get('post_id')
+        key = Post.get_post_key(post_id)
+        post = db.get(key)
+
+        if not post:
+            self.error(404)
+            return
+        self.render("editpost.html", post=post, user=self.user)
+
+    def post(self):
+        if not self.user:
+            self.redirect('/login')
+
+        subject = self.request.get('subject')
+        content = self.request.get('content')
+
+        # Get the post which user wants to update
+        post_id = self.request.get('post_id')
+        key = Post.get_post_key(post_id)
+        post = db.get(key)
+
+        # Update post details in the DB if subject and content provided.
+        # Else, display error message to the user if subject or content missing
+        if subject and content:
+            post.subject = subject
+            post.content = content
+            post.put()
+            self.redirect('/blog/%s' % str(post.key().id()))
+        else:
+            params = dict(subject=subject,
+                          content=content,
+                          post=post,
+                          user=self.user)
+            params['error'] = "Please enter the subject and content"
+            self.render('editpost.html', **params)
+
+# This is used to edit an existing post
+class EditComment(Handler):
+    def get(self):
+        comment_id = self.request.get('comment_id')
+        post_id = self.request.get('post_id')
+        # comment_details = db.GqlQuery('Select * from Comments where __key__ = KEY('Comments', comment_id)')
+        comment = Comments.get_comment_by_id(comment_id, post_id)
+
+        if not comment:
+            self.error(404)
+            return
+        self.render("editcomment.html", comment=comment, post_id=post_id, user=self.user)
+
+    def post(self):
+        if not self.user:
+            self.redirect('/login')
+
+        new_comment = self.request.get('comment')
+
+        # Get the comment which needs to be updated
+        comment_id = self.request.get('comment_id')
+        post_id = self.request.get('post_id')
+        comment = Comments.get_comment_by_id(comment_id, post_id)
+
+        # Update comment details in the DB.
+        # Else, display error message to the user if subject or content missing
+        if new_comment:
+            comment.comment = new_comment
+            comment.put()
+            self.redirect('/blog/%s' % str(post_id))
+        else:
+            error = "Please enter the comment"
+            self.render("editcomment.html", comment=comment, error=error, user=self.user)
+
+
+# This is used to delete an existing comment
+class DeleteComment(Handler):
+    def get(self):
+        comment_id = self.request.get('comment_id')
+        post_id = self.request.get('post_id')
+        key = Comments.get_comment_key(comment_id, post_id)
+        db.delete(key)
+        self.redirect('/blog/%s' % str(post_id))
+
+
+# This is for logging out the user from the application
 class Logout(Handler):
     def get(self):
         self.logout()
@@ -382,6 +482,9 @@ app = webapp2.WSGIApplication([
     ('/blog/?', BlogsLanding),
     ('/blog/newpost', NewPost),
     ('/blog/([0-9]+)', PostDetails),
+    ('/blog/editpost/?', EditPost),
+    ('/blog/editcomment/?', EditComment),
+    ('/blog/deletecomment/?', DeleteComment),
     ('/logout', Logout),
 ],
     debug=True)

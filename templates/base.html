@@ -1,31 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--link type="text/css" rel="stylesheet" href="/static/main.css" /-->
-
-  <title>Multi User Blog</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multi User Blog</title>
+    <link href="https://fonts.googleapis.com/css?family=Lato:100,300" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap-theme.css">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
 
 <body>
-  <a href="/blog" class="main-title">
-    Blog
-  </a>
+<div class="container">
+    <div class="row bg-footer">
+        <div class="col-md-3">
+            <h4><a href="/blog" class="main-title">Blog</a></h4>
+        </div>
 
-  <div class="login-area">
-    {% if user %}
-      {{user.username}} (<a class="login-link" href="/logout">logout</a>)
-    {% else %}
-      <a class="login-link" href="/login">login</a>
-      |
-      <a class="login-link" href="/signup">signup</a>
-    {% endif %}
-  </div>
+        {% if user %}
+        <div class="col-md-3 text-right">
+            <h4><a class="text-thick" href="/blog/newpost">Write a post</a></h4>
+        </div>
+        <div class="col-md-6 text-right">
+            <h4>Welcome, {{user.username}}
+                (<a class="text-thick" href="/logout">Logout</a>)</h4>
+        </div>
+        {% else %}
+        <div class="col-md-9 text-right">
+            <h4><a class="text-thick" href="/login">Login</a>
+                |
+                <a class="text-thick" href="/signup">Signup</a></h4>
+        </div>
+        {% endif %}
+    </div>
 
-  <div id="content">
-  {% block content %}
-  {% endblock %}
-  </div>
+    <section>
+        {% block content %}
+        {% endblock %}
+    </section>
+
+    <footer>
+        <div class="row">
+            <div class="col-md-12 text-center bg-footer">
+                <h5 class="text-muted">Contact: <a href="soumyas@live.com">soumyas@live.com</a></h5>
+            </div>
+        </div>
+    </footer>
+</div>
 </body>
-
 </html>
 
