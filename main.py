@@ -60,6 +60,7 @@ class Handler(webapp2.RequestHandler):
         self.user = uid and User.by_id(int(uid))
 
 
+# This is for registering a new user
 class Signup(Handler):
     def get(self):
         self.render("registration.html")
@@ -93,6 +94,9 @@ class Signup(Handler):
             self.render('registration.html', **params)
         else:
             user = User.by_name(username)
+
+            # If username exists, display error message to the user
+            # Else, register the new user
             if user:
                 params['error_user'] = "This user already exists"
                 self.render('registration.html', **params)
@@ -101,7 +105,6 @@ class Signup(Handler):
                 u.put()
                 self.login(u)
                 self.redirect('/blog')
-                # self.redirect('/welcome?username=' + username)
 
 
 class Welcome(Handler):
@@ -131,6 +134,7 @@ class Login(Handler):
             self.render('login.html', error=error_message)
 
 
+# This is for adding a new post to the DB
 class NewPost(Handler):
     def get(self):
         self.render("newpost.html", user=self.user)
@@ -143,7 +147,7 @@ class NewPost(Handler):
         content = self.request.get('content')
 
         if subject and content:
-            # post = Post(parent=User.get_user_key(self.user.username),
+            # Add the post to DB
             post = Post(author=self.user.username,
                         subject=subject,
                         content=content,
@@ -151,6 +155,7 @@ class NewPost(Handler):
             post.put()
             self.redirect('/blog/%s' % str(post.key().id()))
         else:
+            # If subject or content missing, display error message
             params = dict(subject=subject,
                           content=content,
                           user=self.user)
@@ -158,9 +163,10 @@ class NewPost(Handler):
             self.render('newpost.html', **params)
 
 
+# This is for displaying the details of a particular post
 class PostDetails(Handler):
     def get(self, post_id):
-        #key = Post.get_post_key(post_id, self.user.username)
+        # Retrieve Post details and comments for the selected post
         key = Post.get_post_key(post_id)
         post = db.get(key)
         comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
@@ -185,7 +191,6 @@ class PostDetails(Handler):
             self.redirect('/login')
 
         action = self.request.get('submit')
-        #key = Post.get_post_key(post_id, self.user.username)
         key = Post.get_post_key(post_id)
 
         if action == 'Delete Post':
@@ -204,7 +209,6 @@ class PostDetails(Handler):
             post.list_users_likes = list_likes
             post.put()
 
-            logging.info("** Like called with post id {}! **".format(self.user.username))
             self.redirect('/blog/%s' % str(post.key().id()))
         elif action == 'Unlike':
             post = db.get(key)
@@ -228,14 +232,8 @@ class PostDetails(Handler):
                 error = "Please enter the comment"
                 post = db.get(key)
                 comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
-                self.render("permalink.html", post=post, comments=comments, error=error, user=self.user)
-
-            #comments = Comments(comment=comment,
-            #                  username=self.user.username,
-            #                  parent=key)
-            #comments.put()
-            #post = db.get(key)
-            #self.redirect('/blog/%s' % str(post.key().id()))
+                self.render("permalink.html", post=post, comments=comments,
+                            error=error, user=self.user)
 
 
 # This displays the the most recent 10 posts on the blogs landing page
@@ -284,18 +282,19 @@ class EditPost(Handler):
             params['error'] = "Please enter the subject and content"
             self.render('editpost.html', **params)
 
-# This is used to edit an existing post
+
+# This is used to edit an existing comment
 class EditComment(Handler):
     def get(self):
         comment_id = self.request.get('comment_id')
         post_id = self.request.get('post_id')
-        # comment_details = db.GqlQuery('Select * from Comments where __key__ = KEY('Comments', comment_id)')
         comment = Comments.get_comment_by_id(comment_id, post_id)
 
         if not comment:
             self.error(404)
             return
-        self.render("editcomment.html", comment=comment, post_id=post_id, user=self.user)
+        self.render("editcomment.html", comment=comment,
+                    post_id=post_id, user=self.user)
 
     def post(self):
         if not self.user:
@@ -316,7 +315,8 @@ class EditComment(Handler):
             self.redirect('/blog/%s' % str(post_id))
         else:
             error = "Please enter the comment"
-            self.render("editcomment.html", comment=comment, error=error, user=self.user)
+            self.render("editcomment.html", comment=comment,
+                        error=error, user=self.user)
 
 
 # This is used to delete an existing comment
