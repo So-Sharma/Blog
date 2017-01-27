@@ -29,8 +29,6 @@ class Handler(webapp2.RequestHandler):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
-        # to be modified
-
     def render_str(self, template, **params):
         t = jinja_env.get_template(template)
         return t.render(**params)
@@ -127,7 +125,6 @@ class Login(Handler):
         user = User.login(username, password)
         if user:
             self.login(user)
-            # self.redirect('/welcome?username=' + username)
             self.redirect('/blog')
         else:
             error_message = 'Invalid login id and password'
