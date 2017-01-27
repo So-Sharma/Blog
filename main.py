@@ -169,7 +169,8 @@ class PostDetails(Handler):
         # Retrieve Post details and comments for the selected post
         key = Post.get_post_key(post_id)
         post = db.get(key)
-        comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
+        comments = db.GqlQuery('Select * from Comments where ancestor is :1',
+                               key)
 
         if not post:
             self.error(404)
@@ -184,7 +185,11 @@ class PostDetails(Handler):
         else:
             is_liked = False
 
-        self.render("permalink.html", post=post, comments=comments, user=self.user, is_liked=is_liked)
+        self.render("permalink.html",
+                    post=post,
+                    comments=comments,
+                    user=self.user,
+                    is_liked=is_liked)
 
     def post(self, post_id):
         if not self.user:
@@ -231,7 +236,8 @@ class PostDetails(Handler):
             else:
                 error = "Please enter the comment"
                 post = db.get(key)
-                comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
+                comments = db.GqlQuery(
+                    'Select * from Comments where ancestor is :1', key)
                 self.render("permalink.html", post=post, comments=comments,
                             error=error, user=self.user)
 
@@ -239,7 +245,8 @@ class PostDetails(Handler):
 # This displays the the most recent 10 posts on the blogs landing page
 class BlogsLanding(Handler):
     def get(self):
-        posts = db.GqlQuery("Select * from Post order by created desc limit 10")
+        posts = db.GqlQuery(
+            "Select * from Post order by created desc limit 10")
         self.render('blogslanding.html', posts=posts, user=self.user)
 
 
@@ -268,7 +275,7 @@ class EditPost(Handler):
         post = db.get(key)
 
         # Update post details in the DB if subject and content provided.
-        # Else, display error message to the user if subject or content missing
+        # Else, display error message to user if subject or content missing
         if subject and content:
             post.subject = subject
             post.content = content
@@ -308,7 +315,7 @@ class EditComment(Handler):
         comment = Comments.get_comment_by_id(comment_id, post_id)
 
         # Update comment details in the DB.
-        # Else, display error message to the user if subject or content missing
+        # Else, display error message to the user if comment missing
         if new_comment:
             comment.comment = new_comment
             comment.put()
