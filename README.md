@@ -1,6 +1,6 @@
 **Multi User Blog**
 
-- A multi user blog which allows users to sign in, post blogs posts as well as 'Like' and 'Comment' on other posts made on the blog.
+- A multi user blog which allows users to sign in, post blog posts as well as 'Like' and 'Comment' on other posts made on the blog.
 - Written in Python 2.7.12
 
 **Quick Start**
