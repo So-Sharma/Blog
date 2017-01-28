@@ -2,6 +2,7 @@
 
 - A multi user blog which allows users to sign in, post blog posts as well as 'Like' and 'Comment' on other posts made on the blog.
 - Written in Python 2.7.12
+- App link: <a href="http://ssha-blog.appspot.com/">Blog</a>
 
 **Quick Start**
 

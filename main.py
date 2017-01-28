@@ -341,6 +341,7 @@ class Logout(Handler):
 
 
 app = webapp2.WSGIApplication([
+    ('/', BlogsLanding),
     ('/signup', Signup),
     ('/welcome', Welcome),
     ('/login', Login),
