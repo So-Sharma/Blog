@@ -139,7 +139,7 @@ class NewPost(Handler):
     def post(self):
         if not self.user:
             self.redirect('/login')
-
+            return
         subject = self.request.get('subject')
         content = self.request.get('content')
 
@@ -191,35 +191,58 @@ class PostDetails(Handler):
     def post(self, post_id):
         if not self.user:
             self.redirect('/login')
+            return
 
         action = self.request.get('submit')
         key = Post.get_post_key(post_id)
+        post = db.get(key)
+        if not post:
+            self.user(404)
+            return
+        query_comments = 'Select * from Comments where ancestor is :1'
 
         if action == 'Delete Post':
             # Delete Post
-            db.delete(key)
+            if self.user.username == post.author:
+                db.delete(key)
+                self.redirect('/blog')
+            else:
+                error = "You don't have permission to delete this blog post"
+                comments = db.GqlQuery(query_comments, key)
+                self.render("permalink.html", post=post, comments=comments,
+                            error=error, user=self.user)
 
-            # Delete associated comments
-            # comments_key = Comments.get_comments_key_by_post(post_id)
-            # db.delete(comments_key)
-            self.redirect('/blog')
         elif action == 'Like':
-            post = db.get(key)
-            post.likes_count += 1
-            list_likes = post.list_users_likes
-            list_likes.append(self.user.username)
-            post.list_users_likes = list_likes
-            post.put()
+            # Display error message if user tries to like his own post
+            if self.user.username == post.author:
+                error = "You cannot like your own post"
+                comments = db.GqlQuery(query_comments, key)
+                self.render("permalink.html", post=post, comments=comments,
+                            error=error, user=self.user)
+            else:
+                post.likes_count += 1
+                list_likes = post.list_users_likes
+                if self.user.username not in list_likes:
+                    list_likes.append(self.user.username)
+                    post.list_users_likes = list_likes
+                    post.put()
+                    self.redirect('/blog/%s' % str(post.key().id()))
+                else:
+                    error = "You cannot like a post more than once"
+                    comments = db.GqlQuery(query_comments, key)
+                    self.render("permalink.html", post=post,
+                                comments=comments,
+                                error=error,
+                                user=self.user)
 
-            self.redirect('/blog/%s' % str(post.key().id()))
         elif action == 'Unlike':
-            post = db.get(key)
             post.likes_count -= 1
             list_likes = post.list_users_likes
             list_likes.remove(self.user.username)
             post.list_users_likes = list_likes
             post.put()
             self.redirect('/blog/%s' % str(post.key().id()))
+
         else:
             comment = self.request.get('comment')
 
@@ -228,13 +251,10 @@ class PostDetails(Handler):
                                     username=self.user.username,
                                     parent=key)
                 comments.put()
-                post = db.get(key)
                 self.redirect('/blog/%s' % str(post.key().id()))
             else:
                 error = "Please enter the comment"
-                post = db.get(key)
-                comments = db.GqlQuery(
-                    'Select * from Comments where ancestor is :1', key)
+                comments = db.GqlQuery(query_comments, key)
                 self.render("permalink.html", post=post, comments=comments,
                             error=error, user=self.user)
 
@@ -274,10 +294,19 @@ class EditPost(Handler):
         # Update post details in the DB if subject and content provided.
         # Else, display error message to user if subject or content missing
         if subject and content:
-            post.subject = subject
-            post.content = content
-            post.put()
-            self.redirect('/blog/%s' % str(post.key().id()))
+            if self.user.username == post.author:
+                post.subject = subject
+                post.content = content
+                post.put()
+                self.redirect('/blog/%s' % str(post.key().id()))
+            else:
+                params = dict(subject=subject,
+                              content=content,
+                              post=post,
+                              user=self.user)
+                params['error'] = \
+                    "Sorry, you do not have permission to edit this post"
+                self.render('editpost.html', **params)
         else:
             params = dict(subject=subject,
                           content=content,
@@ -328,9 +357,21 @@ class DeleteComment(Handler):
     def get(self):
         comment_id = self.request.get('comment_id')
         post_id = self.request.get('post_id')
-        key = Comments.get_comment_key(comment_id, post_id)
-        db.delete(key)
-        self.redirect('/blog/%s' % str(post_id))
+        comment = Comments.get_comment_by_id(comment_id, post_id)
+
+        # Delete comment if the user is the author of the comment
+        # Else, display error message to user
+        if self.user.username == comment.username:
+            key = Comments.get_comment_key(comment_id, post_id)
+            db.delete(key)
+            self.redirect('/blog/%s' % str(post_id))
+        else:
+            key = Post.get_post_key(post_id)
+            post = db.get(key)
+            comments = db.GqlQuery('Select * from Comments where ancestor is :1', key)
+            error = "You do not have the permission to delete the comment"
+            self.render("permalink.html", post=post, comments=comments,
+                        error=error, user=self.user)
 
 
 # This is for logging out the user from the application
